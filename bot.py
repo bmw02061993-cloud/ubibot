@@ -27,6 +27,7 @@ LANG = {
         "no_bonuses": "- (нет активных комбинаций)",
         "war_calc": "📊 **Калькулятор войны**\n\nОтправь количество юнитов в формате:\n`T11 200000, T14 50000`\nИли по одному: `T2 300000`",
         "war_result": "🎯 **Очки:** {}\n🏆 **Стадий:** {}\n📈 **До {}:** {} / {}\n⚡ **Бонус восстановления:** +300% (мощь: {} → {})",
+        "invalid": "❌ Неверный формат. Пример: `T11 200000`",
     },
     "en": {
         "choose_troop": "🏆 **UbiHeroOptimizer**\n\nChoose troop type:",
@@ -46,6 +47,7 @@ LANG = {
         "no_bonuses": "- (no active combinations)",
         "war_calc": "📊 **War Calculator**\n\nSend unit count in format:\n`T11 200000, T14 50000`\nOr one by one: `T2 300000`",
         "war_result": "🎯 **Points:** {}\n🏆 **Stages:** {}\n📈 **To {}:** {} / {}\n⚡ **Recovery bonus:** +300% (power: {} → {})",
+        "invalid": "❌ Invalid format. Example: `T11 200000`",
     }
 }
 
@@ -98,7 +100,7 @@ def get_stage(points):
 
 def parse_war_input(text):
     counts = {i: 0 for i in range(1, 15)}
-    pattern = r'T(\d+)\s+(\d+)'
+    pattern = r'T(\d{1,2})\s+(\d+)'
     matches = re.findall(pattern, text, re.IGNORECASE)
     for lvl, cnt in matches:
         lvl = int(lvl)
