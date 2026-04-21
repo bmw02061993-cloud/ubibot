@@ -100,7 +100,6 @@ def get_stage(points):
 
 def parse_war_input(text):
     counts = {i: 0 for i in range(1, 15)}
-    # Ищем T1, T2, ... T14 с пробелом и любым числом
     pattern = r'T(\d{1,2})\s+(\d+)'
     matches = re.findall(pattern, text, re.IGNORECASE)
     for lvl, cnt in matches:
@@ -242,9 +241,9 @@ async def show_main_menu(update, uid):
         [InlineKeyboardButton(t["cavalry"], callback_data="army_Кавалерия")],
         [InlineKeyboardButton("📊 Калькулятор войны", callback_data="war_calc")]
     ]
-    try:
+    if update.callback_query:
         await update.callback_query.edit_message_text(t["choose_troop"], reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
-    except:
+    else:
         await update.message.reply_text(t["choose_troop"], reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
 
 async def set_army(update, context):
@@ -273,10 +272,14 @@ async def show_tiles(update, uid):
         await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
 
 async def menu(update, context):
-    q = update.callback_query
-    await q.answer()
-    uid = q.from_user.id
-    user_data[uid] = {"lang": user_data[uid].get("lang", "ru"), "army": None, "tiles": {c:0 for c in COLOR_NAMES}}
+    if update.callback_query:
+        q = update.callback_query
+        await q.answer()
+        uid = q.from_user.id
+    else:
+        uid = update.effective_user.id
+    
+    user_data[uid] = {"lang": user_data.get(uid, {}).get("lang", "ru"), "army": None, "tiles": {c:0 for c in COLOR_NAMES}}
     await show_main_menu(update, uid)
 
 async def add_tile(update, context):
@@ -338,9 +341,7 @@ async def handle_war_input(update, context):
     t = LANG[lang]
     text = update.message.text.strip()
     
-    # Проверяем, что сообщение похоже на ввод для калькулятора
     if not re.search(r'T\d+\s+\d+', text, re.IGNORECASE):
-        # Если не похоже — игнорируем (не отвечаем)
         return
     
     counts = parse_war_input(text)
@@ -357,6 +358,7 @@ async def handle_war_input(update, context):
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("menu", menu))
     app.add_handler(CallbackQueryHandler(set_lang, pattern="^lang_"))
     app.add_handler(CallbackQueryHandler(set_army, pattern="^army_"))
     app.add_handler(CallbackQueryHandler(add_tile, pattern="^add_"))
