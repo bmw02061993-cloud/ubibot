@@ -25,7 +25,7 @@ LANG = {
         "total_bonus": "🎯 **{}** | Суммарный бонус: +{}%",
         "bonuses": "✨ **Полученные бонусы:**",
         "no_bonuses": "- (нет активных комбинаций)",
-        "war_calc": "📊 **Калькулятор войны**\n\nОтправь количество юнитов в формате:\n`T11 200000, T14 50000`\nИли по одному: `T2 300000`",
+        "war_calc": "📊 **Калькулятор войны**\n\nОтправь количество юнитов в формате:\n`T11 200000, T14 50000`\nИли по одному: `T2 300000`\n\nПоддерживаются любые числа: `T11 999`, `T14 231500`",
         "war_result": "🎯 **Очки:** {}\n🏆 **Стадий:** {}\n📈 **До {}:** {} / {}\n⚡ **Бонус восстановления:** +300% (мощь: {} → {})",
         "invalid": "❌ Неверный формат. Пример: `T11 200000`",
     },
@@ -45,7 +45,7 @@ LANG = {
         "total_bonus": "🎯 **{}** | Total bonus: +{}%",
         "bonuses": "✨ **Bonuses received:**",
         "no_bonuses": "- (no active combinations)",
-        "war_calc": "📊 **War Calculator**\n\nSend unit count in format:\n`T11 200000, T14 50000`\nOr one by one: `T2 300000`",
+        "war_calc": "📊 **War Calculator**\n\nSend unit count in format:\n`T11 200000, T14 50000`\nOr one by one: `T2 300000`\n\nAny number supported: `T11 999`, `T14 231500`",
         "war_result": "🎯 **Points:** {}\n🏆 **Stages:** {}\n📈 **To {}:** {} / {}\n⚡ **Recovery bonus:** +300% (power: {} → {})",
         "invalid": "❌ Invalid format. Example: `T11 200000`",
     }
@@ -100,6 +100,7 @@ def get_stage(points):
 
 def parse_war_input(text):
     counts = {i: 0 for i in range(1, 15)}
+    # Ищем T1, T2, ... T14 с пробелом и любым числом
     pattern = r'T(\d{1,2})\s+(\d+)'
     matches = re.findall(pattern, text, re.IGNORECASE)
     for lvl, cnt in matches:
@@ -333,13 +334,20 @@ async def war_calc(update, context):
 
 async def handle_war_input(update, context):
     uid = update.effective_user.id
-    lang = user_data[uid].get("lang", "ru")
+    lang = user_data.get(uid, {}).get("lang", "ru")
     t = LANG[lang]
-    text = update.message.text
+    text = update.message.text.strip()
+    
+    # Проверяем, что сообщение похоже на ввод для калькулятора
+    if not re.search(r'T\d+\s+\d+', text, re.IGNORECASE):
+        # Если не похоже — игнорируем (не отвечаем)
+        return
+    
     counts = parse_war_input(text)
     if sum(counts.values()) == 0:
         await update.message.reply_text(t["war_calc"], parse_mode="Markdown")
         return
+    
     points = sum(POINTS[l] * counts[l] for l in range(1, 15))
     power = sum(POWER[l] * counts[l] for l in range(1, 15))
     stage, nxt = get_stage(points)
